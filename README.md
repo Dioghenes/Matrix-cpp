@@ -1,2 +1,2 @@
 # Matrix-cpp
-A small matrix library for C++ applications
+A simple matrix library for C++ applications
