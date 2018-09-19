@@ -8,14 +8,14 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
-const int  _MATRIX_ERR  =    -1;
-const int  _MATRIX_VOID =    0;
-const int  _MATRIX_OK   =    +1;
-const int  _PREC_LOW    =    1;
-const int  _PREC_MEDIUM =    2;
-const int  _PREC_HIGH   =    3;
+#define  _MATRIX_ERR      -1
+#define  _MATRIX_VOID     0
+#define  _MATRIX_OK       +1
+#define  _PREC_LOW        100
+#define  _PREC_MEDIUM     500
+#define  _PREC_HIGH       1000
 
-const int prc  =  _PREC_LOW;
+const int _PRECISION  =  _PREC_LOW;
 
 using namespace std;
 
@@ -43,6 +43,8 @@ class Matrix
         int getStatus() const;          // Get the error flag value
         int* size() const;              // Get a vector of two integers in the format rowsxcolumns
         bool isSquare() const;			// Is the matrix a square one
+        bool isDominant() const;
+		bool isStrictlyDominant() const;
 
         //Assignment
         void assign(int rows, int columns, double* vector);     // Assign a matrix to the Matrix object
