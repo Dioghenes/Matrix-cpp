@@ -1,17 +1,22 @@
 /******************************************************
  * Dioghenes
  * Polytechnic of Turin
- * 2017
- * Matrix v0.2
+ * 2019
+ * Matrix v0.3
  ******************************************************/
 
 #include "Matrix.h"
+
+#include <iostream>
+#include <string>
+#include <cstdlib>
+#include <cmath>
 
 using namespace std;
 
 
 /****************************************************
- * Inner functions 
+ * Inner functions
  ****************************************************/
 double _det(const Matrix& matrix, int dim);
 
@@ -32,21 +37,23 @@ Matrix::Matrix():
 Matrix::Matrix(int rows, int columns):
     _rows(rows),
     _columns(columns),
+	_matrix(NULL),
     _statusFlag(_MATRIX_OK)
 {
     _matrix = (double**)malloc(_rows*sizeof(double*));
     if(_matrix == NULL){
-        this->err();
+        this->_err();
         return;
     }
     for(int i=0;i<_rows;i++){
         _matrix[i] = (double*)malloc(_columns*sizeof(double));
         if(_matrix[i] == NULL){
-            this->err();
+            this->_err();
             return;
         }
     }
-    clear();
+    this->clear();
+	return;
 }
 
 // Copy constructor for a generic matrix
@@ -57,13 +64,13 @@ Matrix::Matrix(const Matrix& toCopy):
 {
     _matrix = (double**)malloc(_rows*sizeof(double*));
     if(_matrix == NULL){
-		this->err();
+		this->_err();
         return;
     }
     for(int i=0;i<_rows;i++){
         _matrix[i] = (double*)malloc(_columns*sizeof(double));
         if(_matrix[i] == NULL){
-            this->err();
+            this->_err();
             return;
         }
     }
@@ -72,6 +79,72 @@ Matrix::Matrix(const Matrix& toCopy):
             _matrix[i][j] = toCopy._matrix[i][j];
         }
     }
+	return;
+}
+
+
+/****************************************************
+ * Named Constructors
+ ****************************************************/
+
+// Allocate space for an empty matrix
+Matrix::Matrix(string name):
+	_name(name),
+    _rows(0),
+    _columns(0),
+    _matrix(NULL),
+    _statusFlag(_MATRIX_VOID)
+{}
+
+// Allocate space for a generic matrix initialized to zero
+Matrix::Matrix(int rows, int columns, string name):
+    _name(name),
+	_rows(rows),
+    _columns(columns),
+    _matrix(NULL),
+    _statusFlag(_MATRIX_OK)
+{
+    _matrix = (double**)malloc(_rows*sizeof(double*));
+    if(_matrix == NULL){
+        this->_err();
+        return;
+    }
+    for(int i=0;i<_rows;i++){
+        _matrix[i] = (double*)malloc(_columns*sizeof(double));
+        if(_matrix[i] == NULL){
+            this->_err();
+            return;
+        }
+    }
+    this->clear();
+    return;
+}
+
+// Copy constructor for a generic matrix
+Matrix::Matrix(const Matrix& toCopy, string name):
+	_name(name),
+    _rows(toCopy._rows),
+    _columns(toCopy._columns),
+    _statusFlag(toCopy._statusFlag)
+{
+    _matrix = (double**)malloc(_rows*sizeof(double*));
+    if(_matrix == NULL){
+        this->_err();
+        return;
+    }
+    for(int i=0;i<_rows;i++){
+        _matrix[i] = (double*)malloc(_columns*sizeof(double));
+        if(_matrix[i] == NULL){
+            this->_err();
+            return;
+        }
+    }
+    for(int i=0;i<_rows;i++){
+        for(int j=0;j<_columns;j++){
+            _matrix[i][j] = toCopy._matrix[i][j];
+        }
+    }
+    return;
 }
 
 
@@ -81,11 +154,12 @@ Matrix::Matrix(const Matrix& toCopy):
 
 // Set all the elements of the matrix to 0
 void Matrix::clear(){
-    for(int i=0;i<_rows;i++){
+	for(int i=0;i<_rows;i++){
         for(int j=0;j<_columns;j++){
             _matrix[i][j] = 0;
         }
     }
+	return;
 }
 
 // Reset the matrix, deallocating memory and resetting flags
@@ -96,18 +170,24 @@ void Matrix::reset(){
     if(_matrix!=NULL) free(_matrix);
     _statusFlag = _MATRIX_VOID;
     _rows = 0;
-    _columns= 0;
+    _columns = 0;
+	_matrix = NULL;
+	_name = "";
+	return;
 }
 
 // Create an _MATRIX_ERR matrix with flag set to _MATRIX_ERR
-void Matrix::err(){
+void Matrix::_err(){
     for(int i=0;i<_rows;i++){
         if(_matrix[i]!=NULL) free(_matrix[i]);
     }
     if(_matrix!=NULL) free(_matrix);
     _statusFlag = _MATRIX_ERR;
     _rows = 0;
-    _columns= 0;
+    _columns = 0;
+	_matrix = NULL;
+	_name = "";
+	return;
 }
 
 
@@ -118,14 +198,14 @@ void Matrix::err(){
 // Print the matrix on the screen
 void Matrix::print() const{
     if(_statusFlag == _MATRIX_ERR){
-        cout << "This matrix is invalid." << endl;
+        cout << "Matrix " << _name << " is invalid." << endl;
         return;
     }
     if(_statusFlag == _MATRIX_VOID){
-        cout << "This matrix is void." << endl;
+        cout << "Matrix " << _name << "is void." << endl;
         return;
     }
-    cout << endl;
+    cout << endl << "Matrix " << _name << endl;
     for(int i=0;i<_rows;i++){
         for(int j=0;j<_columns;j++){
             cout << _matrix[i][j] << "\t\t";
@@ -146,9 +226,14 @@ int Matrix::getStatus() const{
     return _statusFlag;
 }
 
+// Get the matrix name
+string Matrix::getName() const{
+	return _name;
+}
+
 // Get the size: [0] is the rows size, [1] is the columns one
 int* Matrix::size() const{
-    int* size;
+	int* size;
     size = (int*)malloc(2*sizeof(int));
     size[0] = _rows;
     size[1] = _columns;
@@ -162,7 +247,7 @@ bool Matrix::isSquare() const{
 
 // Is the matrix dominant-by-row?
 bool Matrix::isDominant() const{
-	if(this->isSquare()) return 0;
+	if(!this->isSquare()) return 0;
     bool isDom = 1;
     double tmp = 0;
     for(int i=0;i<_rows;i++){
@@ -181,7 +266,7 @@ bool Matrix::isDominant() const{
 
 // Is the matrix strictly dominant-by-row?
 bool Matrix::isStrictlyDominant() const{
-	if(this->isSquare()) return 0;
+	if(!this->isSquare()) return 0;
     bool isDom = 1;
     double tmp = 0;
     for(int i=0;i<_rows;i++){
@@ -202,22 +287,28 @@ bool Matrix::isStrictlyDominant() const{
 /****************************************************
  * Assignment
  *****************************************************/
- 
+
+// Assign a name to the matrix
+void Matrix::setName(string name){
+	_name = name;
+	return;
+} 
+
 // Reset and set to new values
 void Matrix::assign(int rows, int columns, double* vector){
-    reset();
+    this->reset();
     _rows = rows;
     _columns = columns;
 
     _matrix = (double**)malloc(_rows*sizeof(double*));
     if(_matrix == NULL){
-        this->err();
+        this->_err();
         return;
     }
     for(int i=0;i<_rows;i++){
         _matrix[i] = (double*)malloc(_columns*sizeof(double));
         if(_matrix[i] == NULL){
-			this->err();
+			this->_err();
 			return;
 		}
     }
@@ -240,42 +331,57 @@ void Matrix::assign(int rows, int columns, double* vector){
 
 // Direct read of an element of the matrix in the form myMatrix(r,c)
 double& Matrix::operator()(int row, int column) const{
-	if(row<_rows && column<_columns) return _matrix[row][column];
-	else return _matrix[0][0];
+	if(_statusFlag == _MATRIX_OK && (row<_rows && column<_columns)) return _matrix[row][column];
+	else return _errmatrix;
 }
 
 // Copy a matrix into another one
 void Matrix::operator=(const Matrix& assignMatrix){
-    reset();
+	this->reset();
+
+	// ERR dest matrix in case of ERR source matrix
+	if(assignMatrix.getStatus() != _MATRIX_OK){
+        this->_err();
+        return;
+    }
+
     _rows = assignMatrix._rows;
     _columns = assignMatrix._columns;
     _statusFlag = assignMatrix._statusFlag;
 
     _matrix = (double**)malloc(_rows*sizeof(double*));
     if(_matrix == NULL){
-		this->err();
+		this->_err();
 		return;
 	}
     for(int i=0;i<_rows;i++){
         _matrix[i] = (double*)malloc(_columns*sizeof(double));
         if(_matrix[i] == NULL){
-			this->err();
+			this->_err();
 			return;
 		}
     }
+
     for(int i=0;i<_rows;i++){
         for(int j=0;j<_columns;j++){
             _matrix[i][j] = assignMatrix._matrix[i][j];
-        }
+		}
     }
 }
 
 // Add two matrix and create a new one with the result
 Matrix Matrix::operator+(const Matrix& addMatrix) const{
     Matrix retMatrix(addMatrix._rows,addMatrix._columns);
-    // Check the correctness of dimensions
+
+	// ERR dest matrix in case of ERR source matrix
+	if(addMatrix.getStatus() != _MATRIX_OK){
+        retMatrix._err();
+        return retMatrix;
+    }
+
+	// Check the correctness of dimensions
     if(_rows != addMatrix._rows || _columns != addMatrix._columns){
-        retMatrix.err();
+        retMatrix._err();
         return retMatrix;
     }
 
@@ -291,9 +397,16 @@ Matrix Matrix::operator+(const Matrix& addMatrix) const{
 // Subtract two matrix and create a new one with the result
 Matrix Matrix::operator-(const Matrix& subtractMatrix) const{
     Matrix retMatrix(subtractMatrix._rows,subtractMatrix._columns);
-    // Check the correctness of dimensions
+
+	// ERR dest matrix in case of ERR source matrix
+	if(subtractMatrix.getStatus() != _MATRIX_OK){
+        retMatrix._err();
+        return retMatrix;
+    }
+
+	// Check the correctness of dimensions
     if(_rows != subtractMatrix._rows || _columns != subtractMatrix._columns){
-        retMatrix.err();
+        retMatrix._err();
         return retMatrix;
     }
 
@@ -309,9 +422,16 @@ Matrix Matrix::operator-(const Matrix& subtractMatrix) const{
 // Multiply two matrix and create a new one with the result
 Matrix Matrix::operator*(const Matrix& multMatrix) const{
     Matrix retMatrix(_rows,multMatrix._columns);
-    // Check the correctness of dimensions
+
+	// ERR dest matrix in case of ERR source matrix
+	if(multMatrix.getStatus() != _MATRIX_OK){
+        retMatrix._err();
+        return retMatrix;
+    }
+
+	 // Check the correctness of dimensions
     if(_columns != multMatrix._rows){
-        retMatrix.err();
+        retMatrix._err();
         return retMatrix;
     }
 
@@ -330,10 +450,10 @@ Matrix Matrix::operator*(const Matrix& multMatrix) const{
 
 
 /****************************************************
- * Functions 
+ * Functions
  ****************************************************/
 
-//Create an eye matrix of size x size
+// Create an eye matrix of size x size
 Matrix eye(int size){
     Matrix retMatrix(size,size);
     for(int i=0;i<size;i++){
@@ -342,7 +462,7 @@ Matrix eye(int size){
     return retMatrix;
 }
 
-//Create a zero matrix of rows x columns
+// Create a zero matrix of rows x columns
 Matrix zeros(int rows, int columns){
     Matrix retMatrix(rows,columns);
     for(int i=0;i<rows;i++){
@@ -353,7 +473,7 @@ Matrix zeros(int rows, int columns){
     return retMatrix;
 }
 
-//Create a matrix of ones of rows x columns
+// Create a matrix of ones of rows x columns
 Matrix ones(int rows, int columns){
     Matrix retMatrix(rows,columns);
     for(int i=0;i<rows;i++){
@@ -370,6 +490,12 @@ Matrix transpose(const Matrix& matrix){
     dimension = (int*)malloc(2*sizeof(int));
     dimension = matrix.size();
     Matrix retMatrix(dimension[1],dimension[0]);
+
+	// ERR dest matrix in case of ERR source matrix
+	if(matrix.getStatus() != _MATRIX_OK){
+        retMatrix._err();
+        return retMatrix;
+    }
 
     for(int i=0;i<dimension[1];i++){
         for(int j=0;j<dimension[0];j++){
@@ -396,13 +522,19 @@ Matrix Jacobi(const Matrix& matrixA, double* vectorb){
     dimensions = matrixA.size();
     Matrix solutionVector(dimensions[0],1);
 
+	// ERR dest matrix in case of ERR source matrix
+	if(matrixA.getStatus() != _MATRIX_OK){
+        solutionVector._err();
+        return solutionVector;
+    }
+
     if(isStrictlyDominant(matrixA) == 0){
-        solutionVector.err();
+        solutionVector._err();
         return solutionVector;
     }
     Matrix copyVector = solutionVector;
 
-    int kMax = _PRECISION;
+    int kMax = _MATRIX_PRECISION;
     double tmp;
     for(int k=0;k<kMax;k++){
         for(int i=0;i<dimensions[0];i++){
@@ -424,12 +556,18 @@ Matrix GaussSeidel(const Matrix& matrixA, double* vectorb){
     dimensions = matrixA.size();
     Matrix solutionVector(dimensions[0],1);
 
-    if(isStrictlyDominant(matrixA) == 0){
-        solutionVector.err();
+	// ERR dest matrix in case of ERR source matrix
+	if(matrixA.getStatus() != _MATRIX_OK){
+        solutionVector._err();
         return solutionVector;
     }
-    
-    int kMax = _PRECISION;
+
+    if(isStrictlyDominant(matrixA) == 0){
+        solutionVector._err();
+        return solutionVector;
+    }
+
+    int kMax = _MATRIX_PRECISION;
     double tmp;
     for(int k=0;k<kMax;k++){
         for(int i=0;i<dimensions[0];i++){
@@ -447,7 +585,14 @@ Matrix GaussSeidel(const Matrix& matrixA, double* vectorb){
 //Multiplication scalar * matrix
 Matrix operator*(double scalar, const Matrix& multMatrix){
     Matrix retMatrix(multMatrix);
-    int* dimension = (int*)malloc(2*sizeof(int));
+
+	// ERR dest matrix in case of ERR source matrix
+    if(multMatrix.getStatus() != _MATRIX_OK){
+        retMatrix._err();
+        return retMatrix;
+    }
+
+	int* dimension = (int*)malloc(2*sizeof(int));
     dimension = retMatrix.size();
     for(int i=0;i<dimension[0];i++){
         for(int j=0;j<dimension[1];j++){
@@ -457,10 +602,17 @@ Matrix operator*(double scalar, const Matrix& multMatrix){
     return retMatrix;
 }
 
-//Multiplication matrix * scalar
+// Multiplication matrix * scalar
 Matrix operator*(const Matrix& multMatrix, double scalar){
     Matrix retMatrix(multMatrix);
-    int* dimension = (int*)malloc(2*sizeof(int));
+
+	// ERR dest matrix in case of ERR source matrix
+	if(multMatrix.getStatus() != _MATRIX_OK){
+        retMatrix._err();
+        return retMatrix;
+    }
+
+	int* dimension = (int*)malloc(2*sizeof(int));
     dimension = retMatrix.size();
     for(int i=0;i<dimension[0];i++){
         for(int j=0;j<dimension[1];j++){
@@ -471,39 +623,60 @@ Matrix operator*(const Matrix& multMatrix, double scalar){
 }
 
 // Power of a matrix ^ scalar
-Matrix operator^(const Matrix& multMatrix, int exponent){
-    Matrix retMatrix(multMatrix);
-    if(!multMatrix.isSquare()){
-		retMatrix.err();
+Matrix operator^(const Matrix& expMatrix, int exponent){
+    Matrix retMatrix(expMatrix);
+
+	// ERR dest matrix in case of ERR source matrix
+    if(expMatrix.getStatus() != _MATRIX_OK){
+        retMatrix._err();
+        return retMatrix;
+    }
+
+	if(!expMatrix.isSquare()){
+		retMatrix._err();
 		return retMatrix;
 	}
     for(int i=0;i<exponent-1;i++){
-        retMatrix = retMatrix*multMatrix;
+        retMatrix = retMatrix*expMatrix;
     }
     return retMatrix;
 }
 
 // Divide a each matrix element by a scalar
-Matrix operator/(const Matrix& matrixA, double scalar){
-    Matrix retMatrix(matrixA);
+Matrix operator/(const Matrix& divMatrix, double scalar){
+    Matrix retMatrix(divMatrix);
+
+	// ERR dest matrix in case of ERR source matrix
+	if(divMatrix.getStatus() != _MATRIX_OK){
+        retMatrix._err();
+        return retMatrix;
+    }
+
     int* dimensions = (int*)malloc(2*sizeof(int));
-    dimensions = matrixA.size();
+    dimensions = divMatrix.size();
     for(int i=0;i<dimensions[0];i++){
         for(int j=0;j<dimensions[1];j++){
-            retMatrix(i,j) = matrixA(i,j)/scalar;
+            retMatrix(i,j) = divMatrix(i,j)/scalar;
         }
     }
     return retMatrix;
 }
 
 // Divide a scalar by each matrix element 
-Matrix operator/(double scalar, const Matrix& matrixA){
-    Matrix retMatrix(matrixA);
-    int* dimensions = (int*)malloc(2*sizeof(int));
-    dimensions = matrixA.size();
+Matrix operator/(double scalar, const Matrix& divMatrix){
+    Matrix retMatrix(divMatrix);
+
+	// ERR dest matrix in case of ERR source matrix
+    if(divMatrix.getStatus() != _MATRIX_OK){
+		retMatrix._err();
+		return retMatrix;
+	}
+
+	int* dimensions = (int*)malloc(2*sizeof(int));
+    dimensions = divMatrix.size();
     for(int i=0;i<dimensions[0];i++){
         for(int j=0;j<dimensions[1];j++){
-            retMatrix(i,j) = scalar/matrixA(i,j);
+            retMatrix(i,j) = scalar/divMatrix(i,j);
         }
     }
     return retMatrix;
@@ -511,6 +684,9 @@ Matrix operator/(double scalar, const Matrix& matrixA){
 
 // Is the matrix dominant-by-row?
 bool isDominant(const Matrix& matrix){
+	// ERR source matrix return value
+	if(matrix.getStatus() != _MATRIX_OK) return 0;
+
 	if(!matrix.isSquare()) return 0;
     bool isDom = 1;
     double tmp = 0;
@@ -532,6 +708,9 @@ bool isDominant(const Matrix& matrix){
 
 // Is the matrix strictly dominant-by-row?
 bool isStrictlyDominant(const Matrix& matrix){
+	// ERR source matrix return value
+	if(matrix.getStatus() != _MATRIX_OK) return 0;
+
 	if(!matrix.isSquare()) return 0;
     bool isDom = 1;
     double tmp = 0;
@@ -553,14 +732,17 @@ bool isStrictlyDominant(const Matrix& matrix){
 
 // Calculate the determinant of the matrix
 double det(const Matrix& matrix){
-    if(!matrix.isSquare()) return 0;
+	// ERR source matrix return value
+    if(matrix.getStatus() != _MATRIX_OK) return 0;
+
+	if(!matrix.isSquare()) return 0;
 	int* dimensions = (int*)malloc(2*sizeof(int));
     dimensions = matrix.size();
     return _det(matrix,dimensions[0]);
 }
 double _det(const Matrix& matrix, int dim){
 	double determ = 0;
-    Matrix temp(dim,dim);
+	Matrix temp(dim,dim);
     if(dim==1) {
         return matrix(0,0);
     }
